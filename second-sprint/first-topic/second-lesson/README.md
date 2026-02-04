@@ -218,3 +218,204 @@ Consider an example:
     fmt.Println(fromTuesdayToThursDaySlice, len(fromTuesdayToThursDaySlice), cap(fromTuesdayToThursDaySlice)) // [2 3 4] 3 6
     fmt.Println(weekTempSlice, len(weekTempSlice), cap(weekTempSlice)) // [1 2 3 4 5 6 7] 7 7
 ```
+
+## Changing the slice size
+
+A slice is a sequence of dynamically sized elements.
+The slice size is reduced through the operation of taking a slice. The result of the capture can be assigned to the same slice:
+
+```go
+    s := []int{1,2,3} // [1 2 3]
+    s = s[:len(s)-1] // [1 2]
+```
+
+The capacity of the array does not change.
+The built-in append function is used to add elements to a slice. It accepts a variable of the "slice" type and one or more variables of the slice element type, then returns a new slice, which consists of a copy of the passed slice and the elements passed into it.
+
+**Attention: append does not modify the slice passed to it, but creates a new one based on the passed one.**
+
+Consider example:
+
+```go
+    a := []int{1, 2, 3, 4}
+    b := a[2:3]   // b = [3]
+    b = append(b, 7)
+    fmt.Println(a, len(a), cap(a)) // [1 2 3 7] 4 4
+    fmt.Println(b, len(b), cap(b)) // [3 7] 2 2
+    b = append(b, 8, 9, 10)
+    b[0] = 11
+    fmt.Println(a, len(a), cap(a)) // [1 2 3 7] 4 4
+    fmt.Println(b, len(b), cap(b)) // [11 7 8 9 10] 5 6
+```
+
+Slice `a` changed after executing the first `append`, because slice `b` increased its length, but did not go beyond the base array.
+The point is in the mechanics of `append`: if the slice capacity allows you to place the added elements (that is, the difference between the length of the slice and its capacity is greater than or equal to the number of placed elements), then `append` returns a new slice, which is obtained from an existing slice by adding new elements inside the base array.
+If the slice's capacity does not allow these elements to be placed, then a new base array of suitable size is created, all the elements of the transferred slice are copied into it and new ones are added. That is why in the example, after the second `append`, slice `b` refers to the new base array. The difference between the capacity of the new base array and its length depends on the number of elements. In the example, the length of the base array for `b` is 5, and the capacity is 6.
+
+For 1000 items, the difference will be different:
+
+```go
+    a := make([]int, 1000)
+    b := append(a, 7)
+    fmt.Println(len(a), cap(a))  // 1000 1000
+    fmt.Println(len(b), cap(b))  // 1001 1536
+```
+
+To connect two slices, you need to unpack the `append(a,b...)` slice. The function takes a number of individual elements and converts the slice into a list through unpacking.
+
+Consider a few more examples:
+
+```go
+s := make([]int, 4, 7) // [0 0 0 0], len = 4 cap = 7
+// 1. Create a slice s with a base array of 7 elements.
+// The first four elements will be available in the slice.
+
+slice1 := append(s[:2], 2, 3, 4)
+fmt.Println(s, slice1) // [0 0 2 3] [0 0 2 3 4]
+// 2. We take a slice from the first two elements of s and add three elements to them.
+// Since the total length of the resulting slice (len == 5) is less than the capacity of s[:2] (cap == 7),
+// then the base array remains the same.
+// Slice s has also changed, but its length remains the same
+
+slice2 := append(s[1:2], 7)
+fmt.Println(s, slice1, slice2) // [0 0 7 3] [0 0 7 3 4] [0 7]
+// 3. Here, too, the base array remains the same, all three slices have changed.
+
+slice3 := append(s, slice1[1:]...)
+fmt.Println(len(slice3), cap(slice3)) // 8 14
+// 4. The length of s and slice1[1:] is 4, the length of the new slice will be 8,
+// which is greater than the capacity of the base array.
+// A new base array with a capacity of 14 will be created,
+// the capacity of the new base array is selected automatically
+// and depends on the current size and the number of added elements
+
+// 5. It is easy to verify that slice3 refers to the new base array
+s[1] = 99
+fmt.Println(s, slice1, slice2, slice3)
+// [0 99 7 3] [0 99 7 3 4] [99 7] [0 0 7 3 0 7 3 4]
+```
+
+This is how this process looks in the picture:
+
+![assets](assets/2.png)
+
+It's not very clear here whether the new slices will reference the same base array or send their copies to the new array. Therefore, in practice, the `append` function is recommended only for assigning a slice to itself: `s = append(s, b)`.
+
+**To use slices, you need to understand how they work. Otherwise, you will get errors that are very difficult to find. Try to avoid situations where multiple slices link to the base array and elements are added or changed.**
+
+The slice capture operation also supports the third parameter: `[low:high:max]` — the third parameter specifies the capacity of the base array required to create a new slice. In this case, the `max` must be less than or equal to the capacity of the base array or slice.
+
+## Assigning a slice and passing it to a function
+
+Assigning slice variables to each other, even the most impressive size, does not consume much computing power, because the slice structure itself always contains only three fields: `ptr`, `len`, and `cap`. However, we must keep in mind that these variables refer to the same array, so a change in the data of one slice may lead to a change in the other.
+
+When passing a slice to the arguments of a function, the slice structure is copied to a local variable inside the function. This allows you to change the data inside the slice passed to the function. However, if you need to add or remove elements from a slice, then these changes will affect only the local variable of the slice.
+
+For example, let's take a couple of functions from the standard library:
+
+```go
+    s := []int{5, 4, 1, 3, 2}
+    sort.Ints(s)
+    fmt.Println(s) // [1 2 3 4 5]
+```
+
+The sort function `sort.Ints()` the resulting slice of integers in ascending order. She does not change the size and capacity of the slice, so she can safely work with it.
+
+```go
+    import (
+    "bytes"
+    "fmt"
+)
+
+func main() {
+    bSlice := []byte(" \t\n a lone gopher \n\t\r\n")
+    fmt.Printf("%s", bytes.TrimSpace(bSlice)) // a lone gopher
+    fmt.Printf("%s", bSlice)  // \t\n a lone gopher \n\t\r\n
+
+}
+```
+
+The `bytes.TrimSpace` function takes a slice of bytes and returns a new slice of bytes from where the beginning and ending whitespace characters have been removed. The slice size should change, which means that the `bSlice` will remain intact. As a result, `bytes.TrimSpace` will give us a new slice.
+
+## Copying slices
+
+To copy elements from one slice to another, the `copy([]T dest, []T src)` function is used, where `dest` is the receiver slice and `src` is the source slice. This function only overwrites the elements, so the number of copied elements will be equal to the shorter length of the two slices.
+
+```go
+var dest []int
+dest2, dest3 := make([]int, 3),  make([]int, 5)
+src := []int{1, 2, 3, 4}
+copy(dest, src)
+copy(dest2, src)
+copy(dest3, src)
+fmt.Println(dest, dest2, dest3, src ) // [] [1 2 3] [1 2 3 4 0] [1 2 3 4]
+```
+
+### Slice traversal and access to elements
+
+Slice traversal and access to slice elements occur in exactly the same way as for arrays. To get to the elements by index, square brackets `[]`, `for` and `for-range` loops are used.
+
+### Useful techniques for working with slices
+
+Unlike other programming languages, Go does not flaunt an abundance of functions for working with slices. The gophers got out and came up with several techniques that allow them to solve common problems.
+
+Deleting the last slice element:
+
+```go
+    s := []int{1, 2, 3}
+    if len(s) != 0 { // avoid panic
+        s = s[:len(s)-1]
+    }
+
+    fmt.Println(s) // [1 2]
+```
+
+Deleting the first slice element:
+
+```go
+    s := []int{1,2,3}
+    if len(s) != 0 { // avoid panic
+        s = s[1:]
+    }
+    fmt.Println(s) // [2 3]
+```
+
+Deleting a slice element with index `i`:
+
+```go
+    s := []int{1,2,3,4,5}
+    i := 2
+
+    if len(s) != 0 && i < len(s) { // avoid panic
+        s = append(s[:i], s[i+1:]...)
+    }
+    fmt.Println(s) // [1 2 4 5]
+```
+
+Comparing two slices:
+
+```go
+
+    s1 := []int{1,2,3}
+    s2 := []int{1,2,4}
+    s3 := []string{"1","2","3"}
+    s4 := []int{1,2,3}
+
+    fmt.Println(reflect.DeepEqual(s1,s2)) // false
+    fmt.Println(reflect.DeepEqual(s1,s3)) // false
+    fmt.Println(reflect.DeepEqual(s1,s4)) // true
+```
+
+## Conclusion
+
+Slices are widely used in Go to implement collections of the same type of elements, but they require proper use: without understanding their structure, you can run into tricky mistakes.
+
+
+
+#### P.S
+
+How can I create a slice based on an array?
+
+```go
+slice := array[:]
+```
