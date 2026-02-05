@@ -129,7 +129,7 @@ To execute tests just run `go test`:
 
 ```bash
 PASS
-ok      github.com/Yandex-Practicum/go-freetrack/00_intro/testing/foo   0.240s 
+ok      github.com/Yandex-Practicum/go-freetrack/00_intro/testing/foo   0.240s
 ```
 
 ## Multithreading in Go
