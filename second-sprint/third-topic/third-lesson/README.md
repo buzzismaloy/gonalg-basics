@@ -94,7 +94,7 @@ main.go:6:2: package ypmodule/calc is not in GOROOT (/usr/local/go/src/ypmodule/
 
 ***The fact is that the `main/go.mod` file does not describe where to look for the `ypmodule` module. At first, Go went to `GOROOT` and did not find it. Then Go saw that `ypmodule` doesn't look like a URL, so it makes no sense to search for this package on the web.***
 
-Since we are currently working with a local module (that is, its code lies only on our file system), we need to use the (replace)[https://golang.org/ref/mod#go-mod-file-replace] directive to determine its position on the local disk. After adding it, the `main/go.mod` file will look like this:
+Since we are currently working with a local module (that is, its code lies only on our file system), we need to use the ([replace](https://golang.org/ref/mod#go-mod-file-replace) directive to determine its position on the local disk. After adding it, the `main/go.mod` file will look like this:
 
 ```
 module main
