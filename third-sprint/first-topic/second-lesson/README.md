@@ -254,3 +254,5 @@ output:
 ```
 [5]: [1 2 3 4 5]
 ```
+
+P.S. Educational project(extended logger) is [here](https://github.com/buzzismaloy/go-logextended).
