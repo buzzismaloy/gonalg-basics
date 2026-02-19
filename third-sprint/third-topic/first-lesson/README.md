@@ -222,3 +222,72 @@ func main() {
     }
 }
 ```
+
+Получим примерно следующее:
+
+2021/05/28 11:33:00: Параметр в testFunc равен 0
+
+Если ошибкой может выступать переменная любого интерфейсного типа error, значит, можно использовать операцию утверждения типа (type assertion) для конвертации ошибки в конкретный базовый тип.
+
+if err := testFunc(0); err != nil {
+    if v, ok := err.(TimeError); ok {
+        fmt.Println(v.Time, v.Text)
+    } else {
+        fmt.Println(err)
+    }
+}
+
+Если ошибки могут быть разных типов, логично использовать конструкцию выбора типа:
+
+if err := testFunc(0); err != nil {
+    switch v := err.(type) {
+    case TimeError:
+        fmt.Println(v.Time, v.Text)
+    case *os.PathError:
+        fmt.Println(v.Err)
+    default:
+        fmt.Println(err)
+    }
+}
+
+Но лучше применить функцию As пакета errors, так как она, в отличие от type assertion, работает с «обёрнутыми» ошибками, которые разберём ниже. As находит первую в цепочке ошибку err, устанавливает тип, равным этому значению ошибки, и возвращает true.
+
+if err := testFunc(0); err != nil {
+    var te TimeError
+    if ok := errors.As(err, &te); ok { //  Сравниваем полученную и контрольную ошибки. Сравнение идёт по типу ошибки.
+        fmt.Println(te.Time, te.Text)
+    } else {
+        fmt.Println(err)
+    }
+}
+
+Возвращение ошибки не всегда означает, что ситуация критическая. Ошибка может сообщать о статусе или состоянии какого-то действия или ресурса. Например, при проверке наличия файла нужно дополнительно проверить полученную ошибку функцией os.IsNotExist. Другой пример — чтение из источника должно продолжаться до получения ошибки io.EOF, которая сигнализирует о том, что все данные прочитаны.
+
+if _, err := os.Stat(filename); err == nil {
+    // файл существует
+} else if os.IsNotExist(err) {
+    // файл не существует
+} else {
+    // в этом случае непонятно, что случилось, и нужно смотреть текст ошибки
+}
+
+func main() {
+    if data, err := ReadTextFile(`myconfig.yaml`); err != nil {
+        if os.IsNotExist(errors.Unwrap(err)) {
+            fmt.Println(`Файл не существует!`)
+        }
+    } else {
+        fmt.Println(data)
+    }
+}
+
+В данном примере можно использовать функцию Is(err, target error) bool из пакета errors, которая определяет, содержит ли цепочка ошибок конкретную ошибку.
+
+func main() {
+    data, err := ReadTextFile("myconfig.yaml")
+    if errors.Is(err, os.ErrNotExist) {
+        fmt.Println("Файл не найден")
+        return
+    }
+    fmt.Println(data)
+}
