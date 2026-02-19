@@ -223,12 +223,15 @@ func main() {
 }
 ```
 
-Получим примерно следующее:
+We'll get something like this:
 
-2021/05/28 11:33:00: Параметр в testFunc равен 0
+```
+2021/05/28 11:33:00: Parameter in testFunc is 0
+```
 
-Если ошибкой может выступать переменная любого интерфейсного типа error, значит, можно использовать операцию утверждения типа (type assertion) для конвертации ошибки в конкретный базовый тип.
+If an `erro`r can be a variable of any interface type, then we can use the **type assertion** operator to convert the error to a specific base type.
 
+```go
 if err := testFunc(0); err != nil {
     if v, ok := err.(TimeError); ok {
         fmt.Println(v.Time, v.Text)
@@ -236,9 +239,11 @@ if err := testFunc(0); err != nil {
         fmt.Println(err)
     }
 }
+```
 
-Если ошибки могут быть разных типов, логично использовать конструкцию выбора типа:
+If errors can be of different types, it makes sense to use the type assertion construct:
 
+```go
 if err := testFunc(0); err != nil {
     switch v := err.(type) {
     case TimeError:
@@ -249,45 +254,56 @@ if err := testFunc(0); err != nil {
         fmt.Println(err)
     }
 }
+```
 
-Но лучше применить функцию As пакета errors, так как она, в отличие от type assertion, работает с «обёрнутыми» ошибками, которые разберём ниже. As находит первую в цепочке ошибку err, устанавливает тип, равным этому значению ошибки, и возвращает true.
+But it's better to use the `As` function from the `errors` package, since, unlike `type assertion`, it works with "wrapped" errors, which we'll discuss below. `As` finds the first `err` in the chain, sets the type equal to this error value, and returns `true`.
 
+```go
 if err := testFunc(0); err != nil {
     var te TimeError
-    if ok := errors.As(err, &te); ok { //  Сравниваем полученную и контрольную ошибки. Сравнение идёт по типу ошибки.
+    if ok := errors.As(err, &te); ok { // Compare the received and control errors. The comparison is based on the error type.
         fmt.Println(te.Time, te.Text)
     } else {
         fmt.Println(err)
     }
 }
+```
 
-Возвращение ошибки не всегда означает, что ситуация критическая. Ошибка может сообщать о статусе или состоянии какого-то действия или ресурса. Например, при проверке наличия файла нужно дополнительно проверить полученную ошибку функцией os.IsNotExist. Другой пример — чтение из источника должно продолжаться до получения ошибки io.EOF, которая сигнализирует о том, что все данные прочитаны.
+Returning an error doesn't always mean the situation is critical. An error can indicate the status or condition of an action or resource. For example, when checking for the existence of a file, you should additionally check the error returned using the `os.IsNotExist` function. Another example: reading from the source should continue until an `io.EOF` error is returned, which indicates that all data has been read.
 
+```go
 if _, err := os.Stat(filename); err == nil {
-    // файл существует
+    // file exists
 } else if os.IsNotExist(err) {
-    // файл не существует
+    // file does not exist
 } else {
-    // в этом случае непонятно, что случилось, и нужно смотреть текст ошибки
+    // in this case, it's unclear what happened, and you should look at the error text
 }
+```
 
+```go
 func main() {
     if data, err := ReadTextFile(`myconfig.yaml`); err != nil {
         if os.IsNotExist(errors.Unwrap(err)) {
-            fmt.Println(`Файл не существует!`)
+            fmt.Println(`File does not exist!`)
         }
     } else {
         fmt.Println(data)
     }
 }
+```
 
-В данном примере можно использовать функцию Is(err, target error) bool из пакета errors, которая определяет, содержит ли цепочка ошибок конкретную ошибку.
+In this example, you can use the `Is(err, target error) bool` function from the `errors` package, which determines whether the error chain contains a specific error.
 
+```go
 func main() {
     data, err := ReadTextFile("myconfig.yaml")
     if errors.Is(err, os.ErrNotExist) {
-        fmt.Println("Файл не найден")
+        fmt.Println("File not found")
         return
     }
     fmt.Println(data)
 }
+```
+
+[Additional materials](https://habr.com/ru/articles/348074/)
