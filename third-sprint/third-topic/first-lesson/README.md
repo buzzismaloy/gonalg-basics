@@ -185,40 +185,40 @@ Sometimes, in addition to the error text, you need to pass additional informatio
 
 ```go
 import (
-"fmt"
-"time"
+    "fmt"
+    "time"
 )
 // Create a custom type that satisfies the error interface
 // TimeError is a type for storing the time and error text.
 type TimeError struct {
-Time time.Time
-Text string
+    Time time.Time
+    Text string
 }
 
 // Error adds support for the error interface for the TimeError type.
 func (te TimeError) Error() string {
-return fmt.Sprintf("%v: %v", te.Time.Format(`2006/01/02 15:04:05`), te.Text)
+    return fmt.Sprintf("%v: %v", te.Time.Format(`2006/01/02 15:04:05`), te.Text)
 }
 
 // NewTimeError returns a TimeError variable with the current time. func NewTimeError(text string) TimeError {
 return TimeError{
-Time: time.Now(),
-Text: text,
-}
+    Time: time.Now(),
+    Text: text,
+    }
 }
 
 func testFunc(i int) error {
 // although NewTimeError returns a TimeError type,
 // testFunc's return type is error
-if i == 0 {
-return NewTimeError(`parameter in testFunc is 0`)
-}
+    if i == 0 {
+        return NewTimeError(`parameter in testFunc is 0`)
+    }
 return nil
 }
 
 func main() {
-if err := testFunc(0); err != nil {
-fmt.Println(err)
-}
+    if err := testFunc(0); err != nil {
+        fmt.Println(err)
+    }
 }
 ```
