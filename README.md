@@ -93,7 +93,7 @@ go run main.go
 
 ---
 
-## Github badges & Author
+## Badges & Author
 
 ![Go](https://img.shields.io/badge/Go-1.22-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/buzzismaloy/gonalg-basics)
