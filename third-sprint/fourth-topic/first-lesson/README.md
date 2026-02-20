@@ -214,6 +214,203 @@ You can test code using just `*testing.T`, but it doesn't provide access to feat
 This gap is being filled by third-party libraries, the most popular of which is [testify](https://github.com/stretchr/testify). It's worth noting that these libraries aren't a replacement for standard `testing`, but rather extend and complement it.
 
 testify is a Swiss army knife in the world of Go code testing. So, let's talk about the frequently used packages from this repository separately.
-[assert](https://pkg.go.dev/github.com/stretchr/testify/assert){target="_blank"} — a package that contains many convenient functions with descriptive names, like assert.Equal or assert.Nil. It's designed for use inside regular Go tests like func TestXxx(t *testing.T) (we'll talk about more unusual ones when we get to suite).
-[require](https://pkg.go.dev/github.com/stretchr/testify/require) — the same as assert, but if the assertions in this package fail, the test execution stops. This means that Fatal is used internally instead of Error.
-- suite — a package that introduces the concept of a test suite. If you've worked with tests in Java or Python, you're likely familiar with it.
+
+- [assert](https://pkg.go.dev/github.com/stretchr/testify/assert){target="_blank"} — a package that contains many convenient functions with descriptive names, like `assert.Equal or assert.Nil`. It's designed for use inside regular Go tests like `func TestXxx(t *testing.T)` (we'll talk about more unusual ones when we get to suite).
+
+- [require](https://pkg.go.dev/github.com/stretchr/testify/require) — the same as assert, but if the assertions in this package fail, the test execution stops. This means that `Fatal` is used internally instead of `Error`.
+
+- [suite](https://pkg.go.dev/github.com/stretchr/testify/suite) — a package that introduces the concept of a **test suite**. If you've worked with tests in Java or Python, you're likely familiar with it.
+
+A **suite** is an object that contains the tests themselves as methods, as well as a set of variables accessible to all tests. A suite also allows you to define code that will be called before and/or after the test execution. This function is useful, for example, for cleaning up the database between tests (for integration tests).
+A typical example of working with the suite from the official documentation looks like this:
+
+```go
+import (
+    "testing"
+    "github.com/stretchr/testify/suite"
+)
+
+// ExampleTestSuite is a test suite created by embedding suite.Suite.
+type ExampleTestSuite struct {
+    suite.Suite
+    VariableThatShouldStartAtFive int
+}
+
+// SetupTest populates the VariableThatShouldStartAtFive variable before starting the test. func (suite *ExampleTestSuite) SetupTest() {
+    suite.VariableThatShouldStartAtFive = 5
+}
+
+func (suite *ExampleTestSuite) TestExample() { // all tests must begin with the word Test
+    suite.Equal(5, suite.VariableThatShouldStartAtFive)
+}
+
+func TestExampleTestSuite(t *testing.T) {
+    // for go test to run the suite, you need to create a regular test function
+    // and call suite.Run in it
+    suite.Run(t, new(ExampleTestSuite))
+}
+```
+
+### Testing patterns
+
+There are a few guidelines on how to and how not to write tests. These aren't specific to Go, so they can be applied to testing in any language.
+
+#### Every test should test one thing
+
+For example, if you are testing a function `func Divide(a, b int) (int, error)`, you should not write code like this:
+
+```go
+func TestDivision(t *testing.T) {
+    result, err := Divide(0, 1)
+    require.NoError(t, err)
+    assert.Equal(t, 0, result)
+
+    result, err = Divide(4, 2)
+    require.NoError(t, err)
+    assert.Equal(t, 2, result)
+
+    _, err = Divide(1, 0)
+    require.Error(err)
+}
+```
+
+It will fail if there's any issue with the function being tested. It's best to break it down into three tests (or three subtests within that test), each testing its own specific scenario:
+
+```go
+func TestDivision(t *testing.T) {
+    t.Run("ZeroNumerator", func(t *testing.T) {
+        result, err := Divide(0, 1)
+        require.NoError(t, err)
+        assert.Equal(t, 0, result)
+    })
+
+    t.Run("BothNonZero", func(t *testing.T) {
+        result, err = Divide(4, 2)
+        require.NoError(t, err)
+        assert.Equal(t, 2, result)
+    })
+
+    t.Run("ZeroDenominator", func(t *testing.T) {
+        _, err = Divide(1, 0)
+        require.Error(err)
+    })
+}
+```
+
+#### Tests should not depend on each other
+
+If one test relies on global state established by other tests, this is a problem. This type of testing architecture leads to unpleasant errors, where tests pass locally but sometimes fail on CI/CD because the order of test execution changes from time to time.
+This same recommendation applies to tests within a single suite. When writing each test, assume that it receives the state after calling the `SetupTest method`.
+
+#### The test result is not a log
+
+When writing a test, assume that if the test passes, no one will look at its logs. All contracts recorded by the test should be written as checks. In this case, you can safely run tests on CI/CD without human intervention.
+
+#### Table-driven tests
+
+In the examples above, we saw that the tests contain a lot of repetitive code, and for good reason. There's a testing pattern called table-driven, or, in Russian, "table testing." It's implemented not only in Go but also in other programming languages.
+The essence of this pattern is to separate test data from the test execution itself. For short tests, this pattern may seem redundant, but it allows for efficient organization and expansion of tests if multiple test suites are required.
+Go has a test template generation package specifically for table-driven testing, so we'll use code generation for this example.
+
+Go has a package for generating test templates specifically for table-driven testing, so we'll use code generation for this example.
+
+If you're using GoLand or VS Code with plugins, the generation tools are already built into the IDE. If not, a few additional steps are required.
+Install the `github.com/cweill/gotests package`:
+
+```
+go get -u github.com/cweill/gotests/...
+```
+
+Let's return to our `Add` function. Let's generate a test template for it:
+
+```
+gotests -only Add .
+```
+
+The following code has been added to the math_test.go file. We've added comments to make it clearer what it does.
+
+```go
+func TestAdd(t *testing.T) {
+    // args — describes the arguments of the function being tested
+    type args struct {
+        a int
+        b int
+    }
+    // describes the structure of the test data and the tests themselves
+    tests := []struct {
+        name string // test name
+        args args // arguments
+        want int // expected value
+        wantErr bool // whether the function should return an error
+    }{
+    // TODO: Add test cases.
+    // Add test cases here
+    }
+    // Call the function under test for each test case
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            got, err := Add(tt.args.a, tt.args.b)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Add() error = %v, wantErr %v", err, tt.wantErr)
+                return
+            }
+            if got != tt.want {
+                t.Errorf("Add() = %v, want %v", got, tt.want)
+            }
+        })
+    }
+}
+```
+
+Let's add test cases to the location specified in `//TODO`:
+
+```go
+        {
+            name: "Test Positive",
+            args: args{
+                a: 1,
+                b: 2,
+            },
+            want:    3,
+            wantErr: false,
+        },
+        {
+            name: "Test Negative 1",
+            args: args{
+                a: -1,
+                b: 2,
+            },
+            want:    0,
+            wantErr: true,
+        },
+        {
+            name: "Test Negative 2",
+            args: args{
+                a: 1,
+                b: -2,
+            },
+            want:    0,
+            wantErr: true,
+        },
+
+        {
+            name: "Test Negative all",
+            args: args{
+                a: -1,
+                b: -2,
+            },
+            want:    0,
+            wantErr: true,
+        },
+```
+
+And let's run the tests.
+
+The advantage of this approach is that you don't need to add calls and checks to add a few more cases. Simply describe the arguments and the desired behavior.
+
+## Key Points
+
+- In Go, testing tools provide everything necessary for unit testing.
+- Test code is determined by the compiler and is not compiled into the final assembly.
+- The necessary tools can be obtained from third-party libraries. Testify, Suite, and Gotests are particularly useful.
+- Table-driven testing is a convenient way to organize tests, often used in practice.
