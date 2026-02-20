@@ -98,4 +98,4 @@ go run main.go
 ![Go](https://img.shields.io/badge/Go-1.22-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/buzzismaloy/gonalg-basics)
 [![GitHub](https://img.shields.io/badge/GitHub-buzzismaloy-black?logo=github)](https://github.com/buzzismaloy)
-[![License](https://img.shields.io/github/license/buzzismaloy/golang-basics?style=for-the-badge&logo=github&color=F2CDCD&logoColor=D9E0EE&labelColor=302D41)](https://github.com/buzzismaloy/gonalg-basics/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/buzzismaloy/gonalg-basics)](https://github.com/buzzismaloy/gonalg-basics/blob/main/LICENSE)
