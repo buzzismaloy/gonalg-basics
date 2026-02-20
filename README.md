@@ -90,3 +90,12 @@ go run main.go
 - Go [tour](https://go.dev/tour/list)
 - Go [docs](https://go.dev/doc/)
 - [Effective](https://go.dev/doc/effective_go) Go
+
+---
+
+## Author
+
+![Go](https://img.shields.io/badge/Go-1.22-blue)
+![Repo Size](https://img.shields.io/github/repo-size/buzzismaloy/gonalg-basics)
+[![GitHub](https://img.shields.io/badge/GitHub-buzzismaloy-black?logo=github)](https://github.com/buzzismaloy)
+[![License](https://img.shields.io/github/license/buzzismaloy/golang-basics?style=for-the-badge&logo=github&color=F2CDCD&logoColor=D9E0EE&labelColor=302D41)](https://github.com/buzzismaloy/gonalg-basics/blob/main/LICENSE)
