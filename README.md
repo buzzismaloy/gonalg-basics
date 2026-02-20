@@ -4,6 +4,8 @@ This repository contains my structured notes and practice materials from the [â€
 
 The project is organized by sprints, topics, and lessons, reflecting the original course structure.
 
+[![License](https://img.shields.io/github/license/buzzismaloy/gonalg-basics)](https://github.com/buzzismaloy/gonalg-basics/blob/main/LICENSE)
+
 ---
 
 ## Repository Structure
@@ -98,4 +100,3 @@ go run main.go
 ![Go](https://img.shields.io/badge/Go-1.22-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/buzzismaloy/gonalg-basics)
 [![GitHub](https://img.shields.io/badge/GitHub-buzzismaloy-black?logo=github)](https://github.com/buzzismaloy)
-[![License](https://img.shields.io/github/license/buzzismaloy/gonalg-basics)](https://github.com/buzzismaloy/gonalg-basics/blob/main/LICENSE)
